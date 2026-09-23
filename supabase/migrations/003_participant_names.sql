@@ -1,1 +1,70 @@
-Y3JlYXRlIG9yIHJlcGxhY2UgZnVuY3Rpb24gcHVibGljLnVwZGF0ZV9wYXJ0aWNpcGFudF9uYW1lKAogIHBfcGFydGljaXBhbnRfaWQgdXVpZCwKICBwX2Rpc3BsYXlfbmFtZSB0ZXh0CikKcmV0dXJucyBwdWJsaWMucGFydGljaXBhbnRzCmxhbmd1YWdlIHBscGdzcWwKc2VjdXJpdHkgZGVmaW5lcgpzZXQgc2VhcmNoX3BhdGggPSBwdWJsaWMKYXMgJCQKZGVjbGFyZQogIHRhcmdldCBwdWJsaWMucGFydGljaXBhbnRzOwogIGFjdG9yIHB1YmxpYy5wYXJ0aWNpcGFudHM7CiAgcHJldmlvdXNfbmFtZSB0ZXh0OwpiZWdpbgogIGlmIGxlbmd0aCh0cmltKHBfZGlzcGxheV9uYW1lKSkgPCAyIG9yIGxlbmd0aCh0cmltKHBfZGlzcGxheV9uYW1lKSkgPiA2MCB0aGVuCiAgICByYWlzZSBleGNlcHRpb24gJ05hbWUgbXVzdCBjb250YWluIGJldHdlZW4gMiBhbmQgNjAgY2hhcmFjdGVycyc7CiAgZW5kIGlmOwoKICBzZWxlY3QgKiBpbnRvIHRhcmdldAogIGZyb20gcHVibGljLnBhcnRpY2lwYW50cwogIHdoZXJlIGlkID0gcF9wYXJ0aWNpcGFudF9pZDsKCiAgaWYgbm90IGZvdW5kIHRoZW4KICAgIHJhaXNlIGV4Y2VwdGlvbiAnUGFydGljaXBhbnQgbm90IGZvdW5kJzsKICBlbmQgaWY7CgogIHNlbGVjdCAqIGludG8gYWN0b3IKICBmcm9tIHB1YmxpYy5wYXJ0aWNpcGFudHMKICB3aGVyZSB0cmlwX2lkID0gdGFyZ2V0LnRyaXBfaWQKICAgIGFuZCB1c2VyX2lkID0gYXV0aC51aWQoKTsKCiAgaWYgbm90IGZvdW5kIG9yIChhY3Rvci5pZCA8PiB0YXJnZXQuaWQgYW5kIG5vdCBhY3Rvci5pc19hZG1pbikgdGhlbgogICAgcmFpc2UgZXhjZXB0aW9uICdOb3QgYWxsb3dlZCc7CiAgZW5kIGlmOwoKICBwcmV2aW91c19uYW1lIDo9IHRhcmdldC5kaXNwbGF5X25hbWU7CgogIHVwZGF0ZSBwdWJsaWMucGFydGljaXBhbnRzCiAgc2V0IGRpc3BsYXlfbmFtZSA9IHRyaW0ocF9kaXNwbGF5X25hbWUpLAogICAgICBsYXN0X3NlZW5fYXQgPSBub3coKQogIHdoZXJlIGlkID0gdGFyZ2V0LmlkCiAgcmV0dXJuaW5nICogaW50byB0YXJnZXQ7CgogIGluc2VydCBpbnRvIHB1YmxpYy5hdWRpdF9sb2coCiAgICB0cmlwX2lkLAogICAgcGFydGljaXBhbnRfaWQsCiAgICBwYXJ0aWNpcGFudF9uYW1lLAogICAgYWN0aW9uX3R5cGUsCiAgICBlbnRpdHlfdHlwZSwKICAgIGVudGl0eV9pZCwKICAgIG9sZF92YWx1ZSwKICAgIG5ld192YWx1ZQogICkKICB2YWx1ZXMoCiAgICB0YXJnZXQudHJpcF9pZCwKICAgIGFjdG9yLmlkLAogICAgYWN0b3IuZGlzcGxheV9uYW1lLAogICAgJ3BhcnRpY2lwYW50X25hbWVfY2hhbmdlZCcsCiAgICAncGFydGljaXBhbnQnLAogICAgdGFyZ2V0LmlkOjp0ZXh0LAogICAganNvbmJfYnVpbGRfb2JqZWN0KCdkaXNwbGF5X25hbWUnLCBwcmV2aW91c19uYW1lKSwKICAgIGpzb25iX2J1aWxkX29iamVjdCgnZGlzcGxheV9uYW1lJywgdGFyZ2V0LmRpc3BsYXlfbmFtZSkKICApOwoKICByZXR1cm4gdGFyZ2V0OwplbmQ7CiQkOwoKcmV2b2tlIGFsbCBvbiBmdW5jdGlvbiBwdWJsaWMudXBkYXRlX3BhcnRpY2lwYW50X25hbWUodXVpZCwgdGV4dCkgZnJvbSBwdWJsaWM7CmdyYW50IGV4ZWN1dGUgb24gZnVuY3Rpb24gcHVibGljLnVwZGF0ZV9wYXJ0aWNpcGFudF9uYW1lKHV1aWQsIHRleHQpIHRvIGF1dGhlbnRpY2F0ZWQ7Cg==
+create or replace function public.update_participant_name(
+  p_participant_id uuid,
+  p_display_name text
+)
+returns public.participants
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target public.participants;
+  actor public.participants;
+  previous_name text;
+begin
+  if length(trim(p_display_name)) < 2 or length(trim(p_display_name)) > 60 then
+    raise exception 'Name must contain between 2 and 60 characters';
+  end if;
+
+  select * into target
+  from public.participants
+  where id = p_participant_id;
+
+  if not found then
+    raise exception 'Participant not found';
+  end if;
+
+  select * into actor
+  from public.participants
+  where trip_id = target.trip_id
+    and user_id = auth.uid();
+
+  if not found or (actor.id <> target.id and not actor.is_admin) then
+    raise exception 'Not allowed';
+  end if;
+
+  previous_name := target.display_name;
+
+  update public.participants
+  set display_name = trim(p_display_name),
+      last_seen_at = now()
+  where id = target.id
+  returning * into target;
+
+  insert into public.audit_log(
+    trip_id,
+    participant_id,
+    participant_name,
+    action_type,
+    entity_type,
+    entity_id,
+    old_value,
+    new_value
+  )
+  values(
+    target.trip_id,
+    actor.id,
+    actor.display_name,
+    'participant_name_changed',
+    'participant',
+    target.id::text,
+    jsonb_build_object('display_name', previous_name),
+    jsonb_build_object('display_name', target.display_name)
+  );
+
+  return target;
+end;
+$$;
+
+revoke all on function public.update_participant_name(uuid, text) from public;
+grant execute on function public.update_participant_name(uuid, text) to authenticated;
