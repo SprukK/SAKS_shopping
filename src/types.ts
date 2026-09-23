@@ -47,6 +47,16 @@ export type ShoppingItem = {
   version: number;
   buyer?: { display_name: string } | null;
   meal?: { title: string; meal_type: string } | null;
+  sources?: Array<{
+    id: string;
+    quantity: number;
+    unit: string | null;
+    meal: {
+      date: string;
+      meal_type: string;
+      title: string;
+    } | null;
+  }>;
 };
 export type Audit = {
   id: string;

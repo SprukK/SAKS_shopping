@@ -567,14 +567,25 @@ function Shopping({
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [touchX, setTouchX] = useState(0);
   const load = useCallback(async () => {
-    const { data } = await supabase
+    let { data, error } = await supabase
       .from("shopping_items")
       .select(
-        "*,buyer:participants!shopping_items_bought_by_fkey(display_name),meal:meals(title,meal_type)",
+        "*,buyer:participants!shopping_items_bought_by_fkey(display_name),meal:meals(title,meal_type),sources:shopping_item_sources(id,quantity,unit,meal:meals(date,meal_type,title))",
       )
       .eq("trip_id", trip.id)
       .order("status")
       .order("created_at");
+    if (error) {
+      const fallback = await supabase
+        .from("shopping_items")
+        .select(
+          "*,buyer:participants!shopping_items_bought_by_fkey(display_name),meal:meals(title,meal_type)",
+        )
+        .eq("trip_id", trip.id)
+        .order("status")
+        .order("created_at");
+      data = fallback.data;
+    }
     setItems((data || []) as ShoppingItem[]);
   }, [trip.id]);
   useEffect(() => {
@@ -802,10 +813,30 @@ function ItemText({ item: i }: { item: ShoppingItem }) {
       <strong>{i.name}</strong>
       <small>
         {i.quantity} {i.unit || ""} · {cats[i.category]}
-        {i.meal?.meal_type
+        {!i.sources?.length && i.meal?.meal_type
           ? ` · ${mealTypes[i.meal.meal_type as keyof typeof mealTypes] || i.meal.meal_type}`
           : ""}
       </small>
+      {!!i.sources?.length && (
+        <span className="source-breakdown">
+          {i.sources
+            .slice()
+            .sort((a, b) =>
+              (a.meal?.date || "").localeCompare(b.meal?.date || ""),
+            )
+            .map((source) => (
+              <small key={source.id}>
+                {source.quantity} {source.unit || ""} ·{" "}
+                {source.meal
+                  ? mealTypes[
+                      source.meal.meal_type as keyof typeof mealTypes
+                    ] || source.meal.meal_type
+                  : "Ročno dodano"}{" "}
+                · {source.meal ? formatDate(source.meal.date) : ""}
+              </small>
+            ))}
+        </span>
+      )}
       {i.buyer?.display_name && <em>Kupil/a: {i.buyer.display_name}</em>}
     </span>
   );

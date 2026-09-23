@@ -405,6 +405,22 @@ nav button.active {
   font-size: 0.82rem;
   margin-bottom: 0.6rem;
 }
+.source-breakdown {
+  display: block;
+  margin-top: 0.45rem;
+  padding: 0.4rem 0.55rem;
+  border-left: 3px solid #83b7b2;
+  background: #f1f8f7;
+  border-radius: 0.25rem;
+}
+.source-breakdown small {
+  display: block;
+  color: #315762;
+  line-height: 1.45;
+}
+.shopping-mode .source-breakdown {
+  font-size: 0.78rem;
+}
 .live-dot,
 .poll-dot {
   width: 0.55rem;
