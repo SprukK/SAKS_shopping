@@ -1,12 +1,4 @@
-# Dependencies
 node_modules
-
-# Production build
 dist
-*.tsbuildinfo
-
-# Local environment
 .env
-
-# OS
 .DS_Store
