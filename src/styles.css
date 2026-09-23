@@ -353,6 +353,37 @@ nav button.active {
   padding: 0.25rem 0 0.7rem;
   scrollbar-width: thin;
 }
+.journeys-section {
+  background: #fff;
+  border: 2px solid #83b7b2;
+  border-radius: 1.1rem;
+  padding: 1rem;
+  margin: 1rem 0 1.5rem;
+  box-shadow: 0 12px 32px #073b4c18;
+}
+.journeys-section h2 {
+  font-size: 1.55rem;
+  margin: 0.1rem 0 1rem;
+}
+.journeys-section .trip {
+  border: 1px solid #b9d1ce;
+  background: #f9fffe;
+}
+.journeys-section .trip strong {
+  font-size: 1.08rem;
+}
+.journeys-section .trip small {
+  margin-top: 0.45rem;
+}
+.new-journey {
+  background: #f7f5ee;
+  box-shadow: none;
+  border-style: dashed;
+}
+.new-journey h2 {
+  font-size: 1.2rem;
+  color: #315762;
+}
 .day-tabs button {
   min-width: 5rem;
   padding: 0.6rem;

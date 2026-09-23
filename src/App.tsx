@@ -12,9 +12,16 @@ import type { Audit, Meal, Participant, ShoppingItem, Trip } from "./types";
 const cats = {
   food: "Hrana / obroki",
   drinks: "Pijača",
-  boat: "Plovilo",
+  boat: "Drugo",
   other: "Drugo",
 } as const;
+const categoryOptions = ["food", "drinks", "other"] as const;
+const formatDate = (value: string) =>
+  new Date(value + "T12:00:00").toLocaleDateString("sl-SI", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 const mealTypes = {
   breakfast: "Zajtrk",
   lunch: "Kosilo",
@@ -100,15 +107,15 @@ function Home() {
       <header className="hero">
         <span className="sail">⛵</span>
         <h1>SAKS Nakupovanje</h1>
-        <p>Obroki in skupni nakupi za plovbo.</p>
+        <p>Obroki in skupni nakupi za jadranje.</p>
         {install && (
           <button className="secondary install" onClick={installApp}>
             Namesti aplikacijo
           </button>
         )}
       </header>
-      <section>
-        <h2>Plovbe</h2>
+      <section className="journeys-section">
+        <h2>Jadranja</h2>
         {loading ? (
           <p className="muted">Nalaganje…</p>
         ) : trips.length ? (
@@ -117,7 +124,7 @@ function Home() {
               <span>
                 <strong>{t.name}</strong>
                 <small>
-                  {t.start_date} – {t.end_date}
+                  {formatDate(t.start_date)} – {formatDate(t.end_date)}
                 </small>
               </span>
               <span>
@@ -126,14 +133,14 @@ function Home() {
             </Link>
           ))
         ) : (
-          <p className="muted">Ni še nobene plovbe. Ustvari prvo spodaj.</p>
+          <p className="muted">Ni še nobenega jadranja. Ustvari prvo spodaj.</p>
         )}
       </section>
-      <section className="card">
-        <h2>Nova plovba</h2>
+      <section className="card new-journey">
+        <h2>Novo jadranje</h2>
         <form onSubmit={create}>
           <label>
-            Ime plovbe
+            Ime jadranja
             <input
               required
               value={name}
@@ -163,7 +170,7 @@ function Home() {
             </label>
           </div>
           <button disabled={busy}>
-            {busy ? "Ustvarjam…" : "Ustvari plovbo"}
+            {busy ? "Ustvarjam…" : "Ustvari jadranje"}
           </button>
         </form>
         {error && <ErrorBox text={error} />}
@@ -280,11 +287,11 @@ function TripPage() {
     <main className={shoppingMode ? "shopping-mode" : ""}>
       <header className="top">
         <button className="secondary back-button" onClick={() => nav("/")}>
-          ← Plovbe
+          ← Jadranja
         </button>
         <div>
           <small>
-            {trip.start_date} – {trip.end_date}
+            {formatDate(trip.start_date)} – {formatDate(trip.end_date)}
           </small>
           <h1>{trip.name}</h1>
         </div>
@@ -299,7 +306,7 @@ function TripPage() {
         </button>
       </header>
       {trip.status === "archived" && (
-        <div className="archive">Plovba je arhivirana in samo za branje.</div>
+        <div className="archive">Jadranje je arhivirano in samo za branje.</div>
       )}
       {!shoppingMode && (
         <nav>
@@ -389,8 +396,20 @@ function Meals({
         { event: "*", schema: "public", filter: `trip_id=eq.${trip.id}` },
         load,
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "meal_ingredients" },
+        load,
+      )
       .subscribe();
+    const polling = window.setInterval(load, 2000);
+    const focus = () => load();
+    window.addEventListener("focus", focus);
+    document.addEventListener("visibilitychange", focus);
     return () => {
+      window.clearInterval(polling);
+      window.removeEventListener("focus", focus);
+      document.removeEventListener("visibilitychange", focus);
       void supabase.removeChannel(c);
     };
   }, [load, trip.id]);
@@ -432,7 +451,7 @@ function Meals({
       <div className="section-title">
         <h2>Načrt obrokov</h2>
       </div>
-      <div className="day-tabs" role="tablist" aria-label="Dnevi plovbe">
+      <div className="day-tabs" role="tablist" aria-label="Dnevi jadranja">
         {days.map((day) => (
           <button
             role="tab"
@@ -717,9 +736,9 @@ function Shopping({
             value={category}
             onChange={(e) => setCategory(e.target.value as keyof typeof cats)}
           >
-            {Object.entries(cats).map(([v, l]) => (
+            {categoryOptions.map((v) => (
               <option value={v} key={v}>
-                {l}
+                {cats[v]}
               </option>
             ))}
           </select>
@@ -867,14 +886,14 @@ function Activity({
     }
   }, [taps]);
   async function archive() {
-    if (!confirm("Arhiviram plovbo? Urejanje ne bo več mogoče.")) return;
+    if (!confirm("Arhiviram jadranje? Urejanje ne bo več mogoče.")) return;
     await supabase.rpc("archive_trip", { p_trip_id: trip.id });
     onArchive();
   }
   async function remove() {
     if (
       !confirm(
-        `Trajno izbrišem plovbo »${trip.name}« in vse njene obroke, nakupe ter dnevnik? Tega ni mogoče razveljaviti.`,
+        `Trajno izbrišem jadranje »${trip.name}« in vse njegove obroke, nakupe ter dnevnik? Tega ni mogoče razveljaviti.`,
       )
     )
       return;
@@ -892,12 +911,12 @@ function Activity({
       <h2 onClick={() => setTaps((t) => t + 1)}>Dnevnik aktivnosti</h2>
       {admin && trip.status === "active" && (
         <button className="danger" onClick={archive}>
-          Arhiviraj plovbo
+          Arhiviraj jadranje
         </button>
       )}
       {admin && (
         <button className="danger delete-trip" onClick={remove}>
-          Trajno izbriši plovbo
+          Trajno izbriši jadranje
         </button>
       )}
       {log.map((a) => (
