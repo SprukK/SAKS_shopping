@@ -91,7 +91,7 @@ function Home() {
         p_name: name,
         p_start_date: start,
         p_end_date: end,
-        p_display_name: savedName() || "Kapitan",
+        p_display_name: savedName() || "Admin",
       });
       if (error) throw error;
       const t = data as Trip;
@@ -878,7 +878,7 @@ function People({ trip, me }: { trip: Trip; me: Participant }) {
         <div className="person" key={p.id}>
           <span>👤</span>
           <strong>{p.display_name}</strong>
-          {p.is_admin && <small>Kapitan</small>}
+          {p.is_admin && <small>Admin</small>}
           {(p.id === me.id || me.is_admin) && (
             <button className="secondary person-edit" onClick={() => rename(p)}>
               Uredi ime
