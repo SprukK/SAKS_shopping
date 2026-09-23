@@ -280,5 +280,107 @@ nav button.active {
     grid-template-columns: 2fr 1fr;
   }
 }
-.back-button{flex:0 0 auto}.top>div{flex:1}.manage-row{position:relative;overflow:hidden;margin:.45rem 0;border-radius:.8rem}.manage-row .item{position:relative;z-index:2;margin:0;transition:transform .2s ease}.manage-row.open .item{transform:translateX(-15rem)}.item-actions{position:absolute;inset:0 0 0 auto;width:15rem;display:flex;align-items:stretch;justify-content:flex-end}.item-actions button{border-radius:0;padding:.65rem}.row-menu{margin-left:auto;background:transparent;color:#073b4c;font-size:1.6rem;padding:.3rem .8rem}.person-edit{margin-left:auto;padding:.55rem .75rem}.shopping-mode nav{display:none}
-@media(max-width:620px){.top{flex-wrap:wrap}.top>div{order:-1;flex-basis:100%}.manage-row.open .item{transform:translateX(-13.5rem)}.item-actions{width:13.5rem}.item-actions button{font-size:.78rem;padding:.5rem}}
+.back-button {
+  flex: 0 0 auto;
+}
+.top > div {
+  flex: 1;
+}
+.manage-row {
+  position: relative;
+  overflow: hidden;
+  margin: 0.45rem 0;
+  border-radius: 0.8rem;
+}
+.manage-row .item {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  transition: transform 0.2s ease;
+}
+.manage-row.open .item {
+  transform: translateX(-15rem);
+}
+.item-actions {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 15rem;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+.item-actions button {
+  border-radius: 0;
+  padding: 0.65rem;
+}
+.row-menu {
+  margin-left: auto;
+  background: transparent;
+  color: #073b4c;
+  font-size: 1.6rem;
+  padding: 0.3rem 0.8rem;
+}
+.person-edit {
+  margin-left: auto;
+  padding: 0.55rem 0.75rem;
+}
+.shopping-mode nav {
+  display: none;
+}
+@media (max-width: 620px) {
+  .top {
+    flex-wrap: wrap;
+  }
+  .top > div {
+    order: -1;
+    flex-basis: 100%;
+  }
+  .manage-row.open .item {
+    transform: translateX(-13.5rem);
+  }
+  .item-actions {
+    width: 13.5rem;
+  }
+  .item-actions button {
+    font-size: 0.78rem;
+    padding: 0.5rem;
+  }
+}
+.day-tabs {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding: 0.25rem 0 0.7rem;
+  scrollbar-width: thin;
+}
+.day-tabs button {
+  min-width: 5rem;
+  padding: 0.6rem;
+}
+.day-tabs button.active {
+  background: #073b4c;
+}
+.day-tabs small {
+  display: block;
+  margin-top: 0.15rem;
+}
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #597078;
+  font-size: 0.82rem;
+  margin-bottom: 0.6rem;
+}
+.live-dot,
+.poll-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #24a148;
+  box-shadow: 0 0 0 0.2rem #24a14822;
+}
+.poll-dot {
+  background: #d89527;
+  box-shadow: 0 0 0 0.2rem #d8952722;
+}

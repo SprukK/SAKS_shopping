@@ -362,6 +362,16 @@ function Meals({
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(trip.start_date);
   const [type, setType] = useState("dinner");
+  const days = useMemo(() => {
+    const result: string[] = [];
+    const current = new Date(trip.start_date + "T12:00:00");
+    const last = new Date(trip.end_date + "T12:00:00");
+    while (current <= last) {
+      result.push(current.toISOString().slice(0, 10));
+      current.setDate(current.getDate() + 1);
+    }
+    return result;
+  }, [trip.start_date, trip.end_date]);
   const load = useCallback(async () => {
     const { data } = await supabase
       .from("meals")
@@ -422,6 +432,29 @@ function Meals({
       <div className="section-title">
         <h2>Načrt obrokov</h2>
       </div>
+      <div className="day-tabs" role="tablist" aria-label="Dnevi plovbe">
+        {days.map((day) => (
+          <button
+            role="tab"
+            aria-selected={date === day}
+            className={date === day ? "active" : "secondary"}
+            key={day}
+            onClick={() => setDate(day)}
+          >
+            <strong>
+              {new Date(day + "T12:00:00").toLocaleDateString("sl-SI", {
+                weekday: "short",
+              })}
+            </strong>
+            <small>
+              {new Date(day + "T12:00:00").toLocaleDateString("sl-SI", {
+                day: "numeric",
+                month: "numeric",
+              })}
+            </small>
+          </button>
+        ))}
+      </div>
       {!readOnly && (
         <form className="inline card" onSubmit={add}>
           <input
@@ -448,43 +481,48 @@ function Meals({
           <button>Dodaj</button>
         </form>
       )}
-      {items.map((m) => (
-        <article className="card meal" key={m.id}>
-          <small>
-            {new Date(m.date + "T12:00:00").toLocaleDateString("sl-SI", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-            })}{" "}
-            · {mealTypes[m.meal_type as keyof typeof mealTypes] || m.meal_type}
-          </small>
-          <h3>{m.title}</h3>
-          <ul>
-            {m.ingredients?.map((i) => (
-              <li key={i.id}>
-                {i.quantity} {i.unit} {i.name}
-                {i.added_to_shopping && <span> ✓</span>}
-              </li>
-            ))}
-          </ul>
-          {!readOnly && (
-            <div className="actions">
-              <button className="secondary" onClick={() => ingredient(m)}>
-                + Sestavina
-              </button>
-              <button
-                disabled={!m.ingredients?.some((i) => !i.added_to_shopping)}
-                onClick={() => transfer(m)}
-              >
-                {m.ingredients?.some((i) => !i.added_to_shopping)
-                  ? "Dodaj v Trgovino"
-                  : "Dodano v Trgovino"}
-              </button>
-            </div>
-          )}
-        </article>
-      ))}
-      {!items.length && <p className="muted">Dodajte prvi obrok.</p>}
+      {items
+        .filter((m) => m.date === date)
+        .map((m) => (
+          <article className="card meal" key={m.id}>
+            <small>
+              {new Date(m.date + "T12:00:00").toLocaleDateString("sl-SI", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}{" "}
+              ·{" "}
+              {mealTypes[m.meal_type as keyof typeof mealTypes] || m.meal_type}
+            </small>
+            <h3>{m.title}</h3>
+            <ul>
+              {m.ingredients?.map((i) => (
+                <li key={i.id}>
+                  {i.quantity} {i.unit} {i.name}
+                  {i.added_to_shopping && <span> ✓</span>}
+                </li>
+              ))}
+            </ul>
+            {!readOnly && (
+              <div className="actions">
+                <button className="secondary" onClick={() => ingredient(m)}>
+                  + Sestavina
+                </button>
+                <button
+                  disabled={!m.ingredients?.some((i) => !i.added_to_shopping)}
+                  onClick={() => transfer(m)}
+                >
+                  {m.ingredients?.some((i) => !i.added_to_shopping)
+                    ? "Dodaj v Trgovino"
+                    : "Dodano v Trgovino"}
+                </button>
+              </div>
+            )}
+          </article>
+        ))}
+      {!items.some((m) => m.date === date) && (
+        <p className="muted">Za ta dan še ni obrokov.</p>
+      )}
     </section>
   );
 }
@@ -506,13 +544,14 @@ function Shopping({
   const [category, setCategory] = useState<keyof typeof cats>("other");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [syncStatus, setSyncStatus] = useState("Povezovanje…");
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [touchX, setTouchX] = useState(0);
   const load = useCallback(async () => {
     const { data } = await supabase
       .from("shopping_items")
       .select(
-        "*,buyer:participants!shopping_items_bought_by_fkey(display_name),meal:meals(title)",
+        "*,buyer:participants!shopping_items_bought_by_fkey(display_name),meal:meals(title,meal_type)",
       )
       .eq("trip_id", trip.id)
       .order("status")
@@ -528,8 +567,19 @@ function Shopping({
         { event: "*", schema: "public", filter: `trip_id=eq.${trip.id}` },
         load,
       )
-      .subscribe();
+      .subscribe((status) => {
+        setSyncStatus(
+          status === "SUBSCRIBED" ? "V živo" : "Samodejno osveževanje",
+        );
+      });
+    const polling = window.setInterval(load, 2000);
+    const focus = () => load();
+    window.addEventListener("focus", focus);
+    document.addEventListener("visibilitychange", focus);
     return () => {
+      window.clearInterval(polling);
+      window.removeEventListener("focus", focus);
+      document.removeEventListener("visibilitychange", focus);
       void supabase.removeChannel(c);
     };
   }, [load, trip.id]);
@@ -612,6 +662,10 @@ function Shopping({
   const done = items.filter((i) => i.status === "bought").length;
   return (
     <section>
+      <div className="sync-status">
+        <span className={syncStatus === "V živo" ? "live-dot" : "poll-dot"} />
+        {syncStatus}
+      </div>
       <div className="progress">
         <strong>
           {done} / {items.length} kupljeno
@@ -729,7 +783,9 @@ function ItemText({ item: i }: { item: ShoppingItem }) {
       <strong>{i.name}</strong>
       <small>
         {i.quantity} {i.unit || ""} · {cats[i.category]}
-        {i.meal?.title ? ` · ${i.meal.title}` : ""}
+        {i.meal?.meal_type
+          ? ` · ${mealTypes[i.meal.meal_type as keyof typeof mealTypes] || i.meal.meal_type}`
+          : ""}
       </small>
       {i.buyer?.display_name && <em>Kupil/a: {i.buyer.display_name}</em>}
     </span>
