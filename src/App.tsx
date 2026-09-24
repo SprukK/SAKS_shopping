@@ -370,6 +370,7 @@ function Meals({
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(trip.start_date);
   const [type, setType] = useState("dinner");
+  const [openMealMenu, setOpenMealMenu] = useState<string | null>(null);
   const days = useMemo(() => {
     const result: string[] = [];
     const current = new Date(trip.start_date + "T12:00:00");
@@ -459,6 +460,7 @@ function Meals({
       alert(`Preimenovanje ni uspelo: ${error.message}`);
       return;
     }
+    setOpenMealMenu(null);
     load();
   }
   async function removeMeal(meal: Meal) {
@@ -476,6 +478,7 @@ function Meals({
       alert(`Odstranjevanje ni uspelo: ${error.message}`);
       return;
     }
+    setOpenMealMenu(null);
     load();
   }
   return (
@@ -543,6 +546,35 @@ function Meals({
             <div className="meal-group-list">
               {group.map((m) => (
                 <article className="card meal" key={m.id}>
+                  {!readOnly && (
+                    <div className="meal-menu">
+                      <button
+                        className="meal-menu-trigger"
+                        aria-label="Možnosti obroka"
+                        aria-expanded={openMealMenu === m.id}
+                        onClick={() =>
+                          setOpenMealMenu(openMealMenu === m.id ? null : m.id)
+                        }
+                      >
+                        ⋯
+                      </button>
+                      {openMealMenu === m.id && (
+                        <div className="meal-menu-popover">
+                          <button onClick={() => renameMeal(m)}>
+                            Preimenuj
+                          </button>
+                          {me.is_admin && (
+                            <button
+                              className="danger"
+                              onClick={() => removeMeal(m)}
+                            >
+                              Odstrani
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <h3>{m.title}</h3>
                   <ul>
                     {m.ingredients?.map((i) => (
@@ -554,12 +586,6 @@ function Meals({
                   </ul>
                   {!readOnly && (
                     <div className="actions">
-                      <button
-                        className="secondary"
-                        onClick={() => renameMeal(m)}
-                      >
-                        Preimenuj
-                      </button>
                       <button
                         className="secondary"
                         onClick={() => ingredient(m)}
@@ -576,14 +602,6 @@ function Meals({
                           ? "Dodaj v Trgovino"
                           : "Dodano v Trgovino"}
                       </button>
-                      {me.is_admin && (
-                        <button
-                          className="danger"
-                          onClick={() => removeMeal(m)}
-                        >
-                          Odstrani
-                        </button>
-                      )}
                     </div>
                   )}
                 </article>
