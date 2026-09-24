@@ -28,6 +28,7 @@ const mealTypes = {
   dinner: "Večerja",
   other: "Drugo",
 } as const;
+const mealTypeOrder = ["breakfast", "lunch", "dinner", "other"] as const;
 function ErrorBox({ text }: { text: string }) {
   return <p className="error">{text}</p>;
 }
@@ -500,45 +501,52 @@ function Meals({
           <button>Dodaj</button>
         </form>
       )}
-      {items
-        .filter((m) => m.date === date)
-        .map((m) => (
-          <article className="card meal" key={m.id}>
-            <small>
-              {new Date(m.date + "T12:00:00").toLocaleDateString("sl-SI", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}{" "}
-              ·{" "}
-              {mealTypes[m.meal_type as keyof typeof mealTypes] || m.meal_type}
-            </small>
-            <h3>{m.title}</h3>
-            <ul>
-              {m.ingredients?.map((i) => (
-                <li key={i.id}>
-                  {i.quantity} {i.unit} {i.name}
-                  {i.added_to_shopping && <span> ✓</span>}
-                </li>
+      {mealTypeOrder.map((mealType) => {
+        const group = items.filter(
+          (meal) => meal.date === date && meal.meal_type === mealType,
+        );
+        if (!group.length) return null;
+        return (
+          <section className="meal-group" key={mealType}>
+            <h3 className="meal-group-title">{mealTypes[mealType]}</h3>
+            <div className="meal-group-list">
+              {group.map((m) => (
+                <article className="card meal" key={m.id}>
+                  <h3>{m.title}</h3>
+                  <ul>
+                    {m.ingredients?.map((i) => (
+                      <li key={i.id}>
+                        {i.quantity} {i.unit} {i.name}
+                        {i.added_to_shopping && <span> ✓</span>}
+                      </li>
+                    ))}
+                  </ul>
+                  {!readOnly && (
+                    <div className="actions">
+                      <button
+                        className="secondary"
+                        onClick={() => ingredient(m)}
+                      >
+                        + Sestavina
+                      </button>
+                      <button
+                        disabled={
+                          !m.ingredients?.some((i) => !i.added_to_shopping)
+                        }
+                        onClick={() => transfer(m)}
+                      >
+                        {m.ingredients?.some((i) => !i.added_to_shopping)
+                          ? "Dodaj v Trgovino"
+                          : "Dodano v Trgovino"}
+                      </button>
+                    </div>
+                  )}
+                </article>
               ))}
-            </ul>
-            {!readOnly && (
-              <div className="actions">
-                <button className="secondary" onClick={() => ingredient(m)}>
-                  + Sestavina
-                </button>
-                <button
-                  disabled={!m.ingredients?.some((i) => !i.added_to_shopping)}
-                  onClick={() => transfer(m)}
-                >
-                  {m.ingredients?.some((i) => !i.added_to_shopping)
-                    ? "Dodaj v Trgovino"
-                    : "Dodano v Trgovino"}
-                </button>
-              </div>
-            )}
-          </article>
-        ))}
+            </div>
+          </section>
+        );
+      })}
       {!items.some((m) => m.date === date) && (
         <p className="muted">Za ta dan še ni obrokov.</p>
       )}
