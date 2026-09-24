@@ -447,6 +447,37 @@ function Meals({
     });
     load();
   }
+  async function renameMeal(meal: Meal) {
+    const nextTitle = prompt("Novo ime obroka", meal.title)?.trim();
+    if (!nextTitle || nextTitle === meal.title) return;
+    const { error } = await supabase.rpc("rename_meal", {
+      p_meal_id: meal.id,
+      p_title: nextTitle,
+      p_participant_id: me.id,
+    });
+    if (error) {
+      alert(`Preimenovanje ni uspelo: ${error.message}`);
+      return;
+    }
+    load();
+  }
+  async function removeMeal(meal: Meal) {
+    if (
+      !confirm(
+        `Odstranim obrok »${meal.title}« in njegove sestavine? Količine v Trgovini bodo samodejno preračunane.`,
+      )
+    )
+      return;
+    const { error } = await supabase.rpc("delete_meal", {
+      p_meal_id: meal.id,
+      p_participant_id: me.id,
+    });
+    if (error) {
+      alert(`Odstranjevanje ni uspelo: ${error.message}`);
+      return;
+    }
+    load();
+  }
   return (
     <section>
       <div className="section-title">
@@ -525,6 +556,12 @@ function Meals({
                     <div className="actions">
                       <button
                         className="secondary"
+                        onClick={() => renameMeal(m)}
+                      >
+                        Preimenuj
+                      </button>
+                      <button
+                        className="secondary"
                         onClick={() => ingredient(m)}
                       >
                         + Sestavina
@@ -539,6 +576,14 @@ function Meals({
                           ? "Dodaj v Trgovino"
                           : "Dodano v Trgovino"}
                       </button>
+                      {me.is_admin && (
+                        <button
+                          className="danger"
+                          onClick={() => removeMeal(m)}
+                        >
+                          Odstrani
+                        </button>
+                      )}
                     </div>
                   )}
                 </article>
