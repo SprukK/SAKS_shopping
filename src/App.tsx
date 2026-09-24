@@ -981,7 +981,32 @@ function Activity({
   }, [trip.id]);
   async function archive() {
     if (!confirm("Arhiviram jadranje? Urejanje ne bo več mogoče.")) return;
-    await supabase.rpc("archive_trip", { p_trip_id: trip.id });
+    const { error } = await supabase.rpc("archive_trip", {
+      p_trip_id: trip.id,
+    });
+    if (error) {
+      alert(`Arhiviranje ni uspelo: ${error.message}`);
+      return;
+    }
+    onArchive();
+  }
+  async function unarchive() {
+    const confirmation = prompt(
+      `Za obnovitev vpiši točno ime jadranja:\n${trip.name}`,
+    );
+    if (confirmation === null) return;
+    const { error } = await supabase.rpc("unarchive_trip", {
+      p_trip_id: trip.id,
+      p_confirmation: confirmation,
+    });
+    if (error) {
+      alert(
+        error.message.includes("Ime jadranja se ne ujema")
+          ? "Vpisano ime se ne ujema z imenom jadranja."
+          : `Obnovitev ni uspela: ${error.message}`,
+      );
+      return;
+    }
     onArchive();
   }
   async function remove() {
@@ -1007,6 +1032,9 @@ function Activity({
         <button className="danger" onClick={archive}>
           Arhiviraj jadranje
         </button>
+      )}
+      {trip.status === "archived" && (
+        <button onClick={unarchive}>Obnovi jadranje</button>
       )}
       <button className="danger delete-trip" onClick={remove}>
         Trajno izbriši jadranje
