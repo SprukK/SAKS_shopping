@@ -970,8 +970,6 @@ function Activity({
   onDelete: () => void;
 }) {
   const [log, setLog] = useState<Audit[]>([]);
-  const [taps, setTaps] = useState(0);
-  const [admin, setAdmin] = useState(false);
   useEffect(() => {
     supabase
       .from("audit_log")
@@ -981,12 +979,6 @@ function Activity({
       .limit(200)
       .then(({ data }) => setLog(data || []));
   }, [trip.id]);
-  useEffect(() => {
-    if (taps >= 10) {
-      setAdmin(true);
-      setTaps(0);
-    }
-  }, [taps]);
   async function archive() {
     if (!confirm("Arhiviram jadranje? Urejanje ne bo več mogoče.")) return;
     await supabase.rpc("archive_trip", { p_trip_id: trip.id });
@@ -1010,17 +1002,15 @@ function Activity({
   }
   return (
     <section>
-      <h2 onClick={() => setTaps((t) => t + 1)}>Dnevnik aktivnosti</h2>
-      {admin && trip.status === "active" && (
+      <h2>Dnevnik aktivnosti</h2>
+      {trip.status === "active" && (
         <button className="danger" onClick={archive}>
           Arhiviraj jadranje
         </button>
       )}
-      {admin && (
-        <button className="danger delete-trip" onClick={remove}>
-          Trajno izbriši jadranje
-        </button>
-      )}
+      <button className="danger delete-trip" onClick={remove}>
+        Trajno izbriši jadranje
+      </button>
       {log.map((a) => (
         <article className="audit" key={a.id}>
           <time>{new Date(a.created_at).toLocaleString("sl-SI")}</time>
