@@ -83,6 +83,9 @@ select {
   display: flex;
   gap: 0.7rem;
 }
+.actions {
+  flex-wrap: wrap;
+}
 .dates > * {
   flex: 1;
 }
