@@ -239,6 +239,17 @@ nav button.active {
 .meal-menu-popover button.danger {
   color: #a13d46;
 }
+.meal-move-control {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.82rem;
+  color: #597078;
+}
+.meal-move-control select {
+  min-width: 9.5rem;
+  margin: 0;
+}
 .meal small,
 .item small,
 .item em {
