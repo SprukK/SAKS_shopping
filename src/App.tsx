@@ -1043,6 +1043,22 @@ function People({ trip, me }: { trip: Trip; me: Participant }) {
     }
     alert(`PIN za ${person.display_name} je nastavljen.`);
   }
+  async function removePerson(person: Participant) {
+    if (
+      !confirm(
+        `Odstranim ${person.display_name} iz ekipe? Oseba bo izgubila dostop do tega jadranja.`,
+      )
+    )
+      return;
+    const { error } = await supabase.rpc("remove_participant", {
+      p_participant_id: person.id,
+    });
+    if (error) {
+      alert(`Odstranitev ni uspela: ${error.message}`);
+      return;
+    }
+    load();
+  }
   return (
     <section>
       <h2>Ekipa</h2>
@@ -1059,6 +1075,14 @@ function People({ trip, me }: { trip: Trip; me: Participant }) {
           {me.is_admin && (
             <button className="secondary person-edit" onClick={() => resetPin(p)}>
               Nastavi PIN
+            </button>
+          )}
+          {me.is_admin && p.id !== me.id && (
+            <button
+              className="danger person-edit"
+              onClick={() => removePerson(p)}
+            >
+              Odstrani
             </button>
           )}
         </div>
