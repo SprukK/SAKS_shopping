@@ -185,6 +185,8 @@ function TripPage() {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [me, setMe] = useState<Participant | null>(null);
   const [name, setName] = useState(savedName());
+  const [pin, setPin] = useState("");
+  const [pinReady, setPinReady] = useState<boolean | null>(null);
   const [tab, setTab] = useState<"meals" | "shopping" | "people" | "activity">(
     "meals",
   );
@@ -207,7 +209,13 @@ function TripPage() {
           .select("*")
           .eq("id", pid)
           .maybeSingle();
-        if (p) setMe(p);
+        if (p) {
+          setMe(p);
+          const { data: hasPin } = await supabase.rpc("participant_has_pin", {
+            p_participant_id: p.id,
+          });
+          setPinReady(Boolean(hasPin));
+        }
       }
     } catch (x) {
       setError(x instanceof Error ? x.message : String(x));
@@ -233,18 +241,52 @@ function TripPage() {
   async function join(e: FormEvent) {
     e.preventDefault();
     try {
-      const { data, error } = await supabase.rpc("join_trip", {
+      const { data, error } = await supabase.rpc("join_or_recover_trip", {
         p_share_token: token,
         p_display_name: name,
+        p_pin: pin,
       });
       if (error) throw error;
+      const result = data as {
+        ok: boolean;
+        code?: string;
+        participant?: Participant;
+      };
+      if (!result.ok || !result.participant) {
+        const messages: Record<string, string> = {
+          invalid_name: "Ime mora vsebovati med 2 in 60 znakov.",
+          invalid_pin: "PIN mora vsebovati natanko 4 številke.",
+          name_taken: "To ime je že zasedeno.",
+          wrong_pin: "Napačen PIN.",
+          locked: "Preveč napačnih poskusov. Poskusi ponovno čez 15 minut.",
+          pin_not_set:
+            "Ta uporabnik še nima PIN-a. Admin naj mu v zavihku Ekipa nastavi PIN.",
+          trip_not_found: "Jadranje ne obstaja.",
+        };
+        throw new Error(messages[result.code || ""] || "Prijava ni uspela.");
+      }
       rememberName(name);
-      localStorage.setItem(tripKey(token), (data as Participant).id);
-      setMe(data);
+      localStorage.setItem(tripKey(token), result.participant.id);
+      setMe(result.participant);
+      setPinReady(true);
       load();
     } catch (x) {
       setError(x instanceof Error ? x.message : String(x));
     }
+  }
+  async function savePin(e: FormEvent) {
+    e.preventDefault();
+    if (!me) return;
+    const { error } = await supabase.rpc("set_participant_pin", {
+      p_participant_id: me.id,
+      p_pin: pin,
+    });
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setPin("");
+    setPinReady(true);
   }
   if (error)
     return (
@@ -279,7 +321,49 @@ function TripPage() {
                 onChange={(e) => setName(e.target.value)}
               />
             </label>
-            <button>Pridruži se</button>
+            <label>
+              4-mestni PIN
+              <input
+                required
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                maxLength={4}
+                type="password"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                placeholder="••••"
+              />
+            </label>
+            <button>Pridruži se / prijavi</button>
+          </form>
+        </section>
+      </main>
+    );
+  if (pinReady === false)
+    return (
+      <main>
+        <header className="hero">
+          <span className="sail">⛵</span>
+          <h1>Nastavi PIN</h1>
+          <p>PIN ti omogoča ponovno prijavo, če naprava pozabi sejo.</p>
+        </header>
+        <section className="card">
+          <form onSubmit={savePin}>
+            <label>
+              Izberi 4-mestni PIN
+              <input
+                autoFocus
+                required
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                maxLength={4}
+                type="password"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                placeholder="••••"
+              />
+            </label>
+            <button>Shrani PIN</button>
           </form>
         </section>
       </main>
@@ -942,6 +1026,23 @@ function People({ trip, me }: { trip: Trip; me: Participant }) {
     if (person.id === me.id) rememberName(displayName);
     load();
   }
+  async function resetPin(person: Participant) {
+    const pin = prompt(`Novi 4-mestni PIN za ${person.display_name}`)?.trim();
+    if (pin === undefined) return;
+    if (!/^\d{4}$/.test(pin)) {
+      alert("PIN mora vsebovati natanko 4 številke.");
+      return;
+    }
+    const { error } = await supabase.rpc("admin_reset_participant_pin", {
+      p_participant_id: person.id,
+      p_pin: pin,
+    });
+    if (error) {
+      alert(`Nastavitev PIN-a ni uspela: ${error.message}`);
+      return;
+    }
+    alert(`PIN za ${person.display_name} je nastavljen.`);
+  }
   return (
     <section>
       <h2>Ekipa</h2>
@@ -953,6 +1054,11 @@ function People({ trip, me }: { trip: Trip; me: Participant }) {
           {(p.id === me.id || me.is_admin) && (
             <button className="secondary person-edit" onClick={() => rename(p)}>
               Uredi ime
+            </button>
+          )}
+          {me.is_admin && (
+            <button className="secondary person-edit" onClick={() => resetPin(p)}>
+              Nastavi PIN
             </button>
           )}
         </div>
