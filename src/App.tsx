@@ -547,6 +547,21 @@ function Meals({
     setOpenMealMenu(null);
     load();
   }
+  async function moveMeal(meal: Meal, nextDate: string) {
+    if (nextDate === meal.date) return;
+    const { error } = await supabase.rpc("move_meal", {
+      p_meal_id: meal.id,
+      p_date: nextDate,
+      p_participant_id: me.id,
+    });
+    if (error) {
+      alert(`Premik ni uspel: ${error.message}`);
+      return;
+    }
+    setOpenMealMenu(null);
+    setDate(nextDate);
+    load();
+  }
   async function removeMeal(meal: Meal) {
     if (
       !confirm(
@@ -647,6 +662,19 @@ function Meals({
                           <button onClick={() => renameMeal(m)}>
                             Preimenuj
                           </button>
+                          <label className="meal-move-control">
+                            Premakni na dan
+                            <select
+                              value={m.date}
+                              onChange={(e) => moveMeal(m, e.target.value)}
+                            >
+                              {days.map((day) => (
+                                <option value={day} key={day}>
+                                  {formatDate(day)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
                           {me.is_admin && (
                             <button
                               className="danger"
