@@ -166,6 +166,48 @@ nav button.active {
 .meal ul {
   padding-left: 1.3rem;
 }
+.ingredient-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2rem;
+}
+.ingredient-menu {
+  position: relative;
+  display: inline-flex;
+}
+.ingredient-menu-trigger {
+  padding: 0.1rem 0.5rem;
+  background: transparent;
+  color: #315762;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.ingredient-menu-popover {
+  position: absolute;
+  top: 1.8rem;
+  right: 0;
+  z-index: 5;
+  min-width: 7rem;
+  padding: 0.3rem;
+  background: #fff;
+  border: 1px solid #b9d1ce;
+  border-radius: 0.65rem;
+  box-shadow: 0 8px 24px #073b4c26;
+}
+.ingredient-menu-popover button {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  background: transparent;
+  color: #073b4c;
+}
+.ingredient-menu-popover button.danger {
+  color: #a13d46;
+}
 .meal-group {
   margin: 1.15rem 0 1.6rem;
 }
