@@ -8,7 +8,14 @@ import {
   savedName,
   tripKey,
 } from "./lib";
-import type { Audit, Meal, Participant, ShoppingItem, Trip } from "./types";
+import type {
+  Audit,
+  Ingredient,
+  Meal,
+  Participant,
+  ShoppingItem,
+  Trip,
+} from "./types";
 const cats = {
   food: "Hrana / obroki",
   drinks: "Pijača",
@@ -455,6 +462,9 @@ function Meals({
   const [date, setDate] = useState(trip.start_date);
   const [type, setType] = useState("dinner");
   const [openMealMenu, setOpenMealMenu] = useState<string | null>(null);
+  const [openIngredientMenu, setOpenIngredientMenu] = useState<string | null>(
+    null,
+  );
   const days = useMemo(() => {
     const result: string[] = [];
     const current = new Date(trip.start_date + "T12:00:00");
@@ -523,6 +533,43 @@ function Meals({
       unit: unit || null,
       created_by: me.id,
     });
+    load();
+  }
+  async function editIngredient(item: Ingredient) {
+    const name = prompt("Sestavina", item.name)?.trim();
+    if (!name) return;
+    const quantity = Number(prompt("Količina", String(item.quantity)));
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      alert("Količina mora biti večja od 0.");
+      return;
+    }
+    const unit = prompt("Enota (neobvezno)", item.unit || "");
+    if (unit === null) return;
+    const { error } = await supabase.rpc("update_meal_ingredient", {
+      p_ingredient_id: item.id,
+      p_name: name,
+      p_quantity: quantity,
+      p_unit: unit,
+      p_participant_id: me.id,
+    });
+    if (error) {
+      alert(`Urejanje ni uspelo: ${error.message}`);
+      return;
+    }
+    setOpenIngredientMenu(null);
+    load();
+  }
+  async function removeIngredient(item: Ingredient) {
+    if (!confirm(`Odstranim sestavino »${item.name}«?`)) return;
+    const { error } = await supabase.rpc("delete_meal_ingredient", {
+      p_ingredient_id: item.id,
+      p_participant_id: me.id,
+    });
+    if (error) {
+      alert(`Odstranjevanje ni uspelo: ${error.message}`);
+      return;
+    }
+    setOpenIngredientMenu(null);
     load();
   }
   async function transfer(meal: Meal) {
@@ -690,9 +737,39 @@ function Meals({
                   <h3>{m.title}</h3>
                   <ul>
                     {m.ingredients?.map((i) => (
-                      <li key={i.id}>
-                        {i.quantity} {i.unit} {i.name}
-                        {i.added_to_shopping && <span> ✓</span>}
+                      <li className="ingredient-row" key={i.id}>
+                        <span>
+                          {i.quantity} {i.unit} {i.name}
+                          {i.added_to_shopping && <span> ✓</span>}
+                        </span>
+                        {!readOnly && (
+                          <span className="ingredient-menu">
+                            <button
+                              className="ingredient-menu-trigger"
+                              aria-label={`Možnosti sestavine ${i.name}`}
+                              onClick={() =>
+                                setOpenIngredientMenu(
+                                  openIngredientMenu === i.id ? null : i.id,
+                                )
+                              }
+                            >
+                              ⋯
+                            </button>
+                            {openIngredientMenu === i.id && (
+                              <span className="ingredient-menu-popover">
+                                <button onClick={() => editIngredient(i)}>
+                                  Uredi
+                                </button>
+                                <button
+                                  className="danger"
+                                  onClick={() => removeIngredient(i)}
+                                >
+                                  Odstrani
+                                </button>
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>
